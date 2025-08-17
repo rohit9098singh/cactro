@@ -23,7 +23,7 @@ function authenticateToken(req, res, next) {
     if (err) {
       return res.status(403).json({
         success: false,
-        message: "Invalid or expired token"
+        message: "Invalid or   expired token"
       });
     }
     req.user = user;
