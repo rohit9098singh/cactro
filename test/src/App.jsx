@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './contexts/AuthContext.jsx';
+import { useAuth } from './hooks/useAuth';
+import Header from './components/Header';
+import LoginPage from './components/LoginPage';
 import VideoSearch from './components/VideoSearch';
 import VideoDetails from './components/VideoDetails';
 import CommentsSection from './components/CommentsSection';
 import NotesSection from './components/NotesSection';
 import './App.css';
 
-const App = () => {
+const AppContent = () => {
+  const { isAuthenticated, loading } = useAuth();
   const [currentVideo, setCurrentVideo] = useState(null);
 
   const handleVideoFound = (video) => {
@@ -17,63 +22,26 @@ const App = () => {
     setCurrentVideo(updatedVideo);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Toaster position="top-right" />
       
-      {/* Header */}
-      <header className="bg-gradient-to-r from-red-600 via-red-500 to-pink-600 shadow-lg border-b relative overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-black bg-opacity-10"></div>
-        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent"></div>
-        
-        {/* Floating Elements */}
-        <div className="absolute top-4 right-4 w-20 h-20 bg-white/10 rounded-full blur-xl animate-pulse"></div>
-        <div className="absolute bottom-2 left-8 w-16 h-16 bg-pink-300/20 rounded-full blur-lg animate-bounce"></div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center space-x-4">
-              {/* YouTube Icon */}
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg">
-                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                  </svg>
-                </div>
-              </div>
-              
-              {/* Title and Description */}
-              <div>
-                <h1 className="text-xl sm:text-3xl font-bold text-white leading-tight">
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-pink-100">
-                    YouTube Video Management
-                  </span>
-                  <br />
-                  <span className="text-lg sm:text-2xl font-semibold text-pink-100">
-                    Dashboard
-                  </span>
-                </h1>
-                <p className="text-sm sm:text-base text-pink-100/90 mt-2 font-medium">
-                  🚀 Manage your unlisted YouTube videos with ease and style
-                </p>
-              </div>
-            </div>
-            
-            {/* Right side decorative elements */}
-            <div className="hidden sm:flex items-center space-x-2 mt-4 sm:mt-0">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-white/60 rounded-full animate-ping"></div>
-                <div className="w-2 h-2 bg-pink-200/60 rounded-full animate-ping" style={{animationDelay: '0.2s'}}></div>
-                <div className="w-2 h-2 bg-red-200/60 rounded-full animate-ping" style={{animationDelay: '0.4s'}}></div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Bottom decorative line */}
-          <div className="mt-4 sm:mt-6 h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"></div>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -158,6 +126,14 @@ const App = () => {
         </div>
       </footer>
     </div>
+  );
+};
+
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

@@ -1,9 +1,35 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import Video from '../models/Video.js';
+import User from '../models/User.js';
 import youtubeService from '../services/youtubeService.js';
 import { eventLogger, logEvent } from '../middleware/eventLogger.js';
 
 const router = express.Router();
+
+// Middleware to authenticate JWT token
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Access token required"
+    });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({
+        success: false,
+        message: "Invalid or expired token"
+      });
+    }
+    req.user = user;
+    next();
+  });
+}
 
 // Get video details by YouTube ID
 router.get('/:videoId', eventLogger('video_fetched'), async (req, res) => {
@@ -135,7 +161,7 @@ router.get('/:videoId/comments', eventLogger('user_action'), async (req, res) =>
 });
 
 // Add comment to video
-router.post('/:videoId/comments', eventLogger('comment_added'), async (req, res) => {
+router.post('/:videoId/comments', authenticateToken, eventLogger('comment_added'), async (req, res) => {
   try {
     const { videoId } = req.params;
     const { text } = req.body;
@@ -147,7 +173,19 @@ router.post('/:videoId/comments', eventLogger('comment_added'), async (req, res)
       });
     }
 
-    const comment = await youtubeService.addComment(videoId, text);
+    // Get user's Google tokens from database
+    const user = await User.findById(req.user.id);
+    if (!user || !user.googleAccessToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Google authentication required. Please log in again.'
+      });
+    }
+
+    const comment = await youtubeService.addComment(videoId, text, {
+      googleAccessToken: user.googleAccessToken,
+      googleRefreshToken: user.googleRefreshToken
+    });
     
     res.json({
       success: true,
@@ -165,7 +203,7 @@ router.post('/:videoId/comments', eventLogger('comment_added'), async (req, res)
 });
 
 // Reply to comment
-router.post('/:videoId/comments/:commentId/reply', eventLogger('comment_replied'), async (req, res) => {
+router.post('/:videoId/comments/:commentId/reply', authenticateToken, eventLogger('comment_replied'), async (req, res) => {
   try {
     const { commentId } = req.params;
     const { text } = req.body;
@@ -177,7 +215,19 @@ router.post('/:videoId/comments/:commentId/reply', eventLogger('comment_replied'
       });
     }
 
-    const reply = await youtubeService.replyToComment(commentId, text);
+    // Get user's Google tokens from database
+    const user = await User.findById(req.user.id);
+    if (!user || !user.googleAccessToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Google authentication required. Please log in again.'
+      });
+    }
+
+    const reply = await youtubeService.replyToComment(commentId, text, {
+      googleAccessToken: user.googleAccessToken,
+      googleRefreshToken: user.googleRefreshToken
+    });
     
     res.json({
       success: true,

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,10 +9,17 @@ const api = axios.create({
   },
 });
 
-// Request interceptor
+// Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
     console.log('API Request:', config.method?.toUpperCase(), config.url);
+    
+    // Add auth token if available
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     return config;
   },
   (error) => {
@@ -30,6 +37,16 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// User/Auth API calls
+export const userAPI = {
+  getProfile: (token) => api.get('/auth/profile', {
+    headers: { Authorization: `Bearer ${token}` }
+  }),
+  logout: (token) => api.post('/auth/logout', {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  }),
+};
 
 // Video API calls
 export const videoAPI = {
